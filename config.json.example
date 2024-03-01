@@ -1,0 +1,29 @@
+{
+    "db_info": {
+        "username": "root",
+        "password": "",
+        "address": "localhost:3306",
+        "dbname": "my_database"  
+    },
+    "devices": [
+        {
+            "name": "device_name",
+            "address": "http://example.com/some.csv",
+            "filepath": "/some/path"
+            "interval": 30,
+            "csv_options": {
+                "skip_rows": 3,
+                "delimiter": ";"
+                "create_table_opts": "UNIQUE KEY (start_date)",
+                "columns": [
+                    {
+                        "column_index": 0,
+                        "name": "start_date",
+                        "sql_type": "DATE",
+                        "sql_formatter": "STR_TO_DATE(?, '%d/%m/%Y')"
+                    }  
+                ]
+            }
+        }
+    ]
+}
