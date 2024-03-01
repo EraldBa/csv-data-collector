@@ -6,56 +6,50 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"log"
 	"os"
-	"runtime"
+	"sync"
 
 	"github.com/go-sql-driver/mysql"
 )
 
-const (
-	logFileName    = "log.txt"
-	configFileName = "config.json"
-)
-
 func main() {
-	defer os.Exit(0)
-
-	logFile, err := os.OpenFile(logFileName, os.O_WRONLY, fs.ModeAppend)
-	if err != nil {
-		logFile, err = os.Create(logFileName)
-		checkError(err)
-	}
-
-	defer logFile.Close()
-
-	log.SetOutput(logFile)
-
-	data, err := os.ReadFile(configFileName)
-	checkError(err)
+	data, err := os.ReadFile("config.json")
+	exitIfError(err)
 
 	config := &models.Config{}
 
 	err = json.Unmarshal(data, config)
-	checkError(err)
+	exitIfError(err)
+
+	err = config.RunChecks()
+	exitIfError(err)
 
 	conn, err := openDBConn(&config.DbInfo)
-	checkError(err)
+	exitIfError(err)
 
 	defer conn.Close()
 
 	dbConf := repository.NewDBConf(conn)
 
-	err = config.RunChecks()
-	checkError(err)
+	wg := &sync.WaitGroup{}
 
 	for _, device := range config.Devices {
-		err = dbConf.SaveCSVDataFor(&device)
-		checkError(err)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
-		log.Println("Saved device data successfully for:", device.Name)
+			err = dbConf.SaveCSVDataFor(&device)
+			if err != nil {
+				log.Println("ERROR: Could not save data for device with error:", err)
+				return
+			}
+
+			log.Println("Saved device data successfully for:", device.Name)
+		}()
 	}
+
+	wg.Wait()
 }
 
 // opendDBConn opens mysql db connection using the provided DBInfo conf
@@ -94,11 +88,10 @@ func openDBConn(dbInfo *models.DBInfo) (*sql.DB, error) {
 	return db, nil
 }
 
-// checkError performs log.Fatal() on the error if it exists
-// The function exists just to save time by preventing repetition
-func checkError(err error) {
+// exitIfError performs log.Fatal() on the error if it exists
+// This function exists just to save time by preventing repetition
+func exitIfError(err error) {
 	if err != nil {
-		log.Println(err)
-		runtime.Goexit()
+		log.Fatal(err)
 	}
 }
