@@ -6,18 +6,34 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
-	"time"
+	"runtime"
 
 	"github.com/go-sql-driver/mysql"
 )
 
+const (
+	logFileName    = "log.txt"
+	configFileName = "config.json"
+)
+
 func main() {
-	data, err := os.ReadFile("config.json")
+	defer os.Exit(0)
+
+	logFile, err := os.OpenFile(logFileName, os.O_WRONLY, fs.ModeAppend)
 	if err != nil {
-		log.Fatal(err)
+		logFile, err = os.Create(logFileName)
+		checkError(err)
 	}
+
+	defer logFile.Close()
+
+	log.SetOutput(logFile)
+
+	data, err := os.ReadFile(configFileName)
+	checkError(err)
 
 	config := &models.Config{}
 
@@ -34,33 +50,12 @@ func main() {
 	err = config.RunChecks()
 	checkError(err)
 
-	threadLaunched := false
 	for _, device := range config.Devices {
 		err = dbConf.SaveCSVDataFor(&device)
 		checkError(err)
+
 		log.Println("Saved device data successfully for:", device.Name)
-
-		// if there's an interval specified for the device, run SaveCSVDataFor on
-		// the device in the background on a separate thread by interval * minute times
-		if device.Interval > 0 {
-			go func(device *models.Device) {
-				for range time.Tick(time.Minute * time.Duration(device.Interval)) {
-					err := dbConf.SaveCSVDataFor(device)
-					checkError(err)
-
-					log.Println("Saved device data successfully for:", device.Name)
-				}
-			}(&device)
-
-			threadLaunched = true
-		}
 	}
-
-	if !threadLaunched {
-		os.Exit(0)
-	}
-
-	select {}
 }
 
 // opendDBConn opens mysql db connection using the provided DBInfo conf
@@ -103,6 +98,7 @@ func openDBConn(dbInfo *models.DBInfo) (*sql.DB, error) {
 // The function exists just to save time by preventing repetition
 func checkError(err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		runtime.Goexit()
 	}
 }

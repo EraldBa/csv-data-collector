@@ -29,7 +29,6 @@ type Device struct {
 	Name       string     `json:"name"`
 	FilePath   string     `json:"filepath"`
 	Address    string     `json:"address"`
-	Interval   uint       `json:"interval"`
 	CsvOptions CSVOptions `json:"csv_options"`
 }
 
@@ -69,10 +68,6 @@ func (c *Config) RunChecks() error {
 		if device.FilePath != "" {
 			if _, err := os.Stat(device.FilePath); err != nil {
 				return fmt.Errorf("device data path %s is not valid or file does not exist at json index: %d", device.FilePath, i)
-			}
-
-			if device.Interval > 0 {
-				return fmt.Errorf("device %s interval and data path can't be set at the same time at json index: %d", device.Name, i)
 			}
 		}
 

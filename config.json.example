@@ -10,7 +10,6 @@
             "name": "device_name",
             "address": "http://example.com/some.csv",
             "filepath": "/some/path"
-            "interval": 30,
             "csv_options": {
                 "skip_rows": 3,
                 "delimiter": ";"
