@@ -36,17 +36,17 @@ func main() {
 
 	for _, device := range config.Devices {
 		wg.Add(1)
-		go func() {
+		go func(device *models.Device) {
 			defer wg.Done()
 
-			err = dbConf.SaveCSVDataFor(&device)
+			err = dbConf.SaveCSVDataFor(device)
 			if err != nil {
 				log.Println("ERROR: Could not save data for device with error:", err)
 				return
 			}
 
 			log.Println("Saved device data successfully for:", device.Name)
-		}()
+		}(&device)
 	}
 
 	wg.Wait()
