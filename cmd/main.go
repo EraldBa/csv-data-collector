@@ -36,7 +36,7 @@ func main() {
 
 	defer conn.Close()
 
-	dbConf := repository.NewDBConf(conn, config)
+	dbConf := repository.New(conn, config)
 
 	dbConf.SaveDevices()
 }

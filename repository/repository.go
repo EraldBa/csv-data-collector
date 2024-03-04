@@ -13,19 +13,19 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// DBConf holds the app database configurations
+// dbConf holds the app database configurations
 // and database connection
-type DBConf struct {
+type dbConf struct {
 	AppConf *models.Config
 	DB      *sql.DB
 }
 
 const ctxTimeOut = 30 * time.Second
 
-// NewDBConf returns a new instance of DBConf with the
+// New returns a new instance of dbConf with the
 // provided db connection
-func NewDBConf(conn *sql.DB, config *models.Config) *DBConf {
-	return &DBConf{
+func New(conn *sql.DB, config *models.Config) *dbConf {
+	return &dbConf{
 		AppConf: config,
 		DB:      conn,
 	}
@@ -33,7 +33,7 @@ func NewDBConf(conn *sql.DB, config *models.Config) *DBConf {
 
 // SaveDevices saves data from all devices in the app config
 // concurrently. It logs save info for each device to stdout
-func (d *DBConf) SaveDevices() {
+func (d *dbConf) SaveDevices() {
 	wg := &sync.WaitGroup{}
 
 	for _, device := range d.AppConf.Devices {
@@ -56,7 +56,7 @@ func (d *DBConf) SaveDevices() {
 
 // SaveCSVDataFor saves the csv data for the provided device to the
 // appropriate table in the db
-func (d *DBConf) SaveCSVDataFor(device *models.Device) error {
+func (d *dbConf) SaveCSVDataFor(device *models.Device) error {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeOut)
 	defer cancel()
 
@@ -84,7 +84,7 @@ func (d *DBConf) SaveCSVDataFor(device *models.Device) error {
 }
 
 // CreateTableFor creates a table in the db for specified device
-func (d *DBConf) createTableFor(device *models.Device) error {
+func (d *dbConf) createTableFor(device *models.Device) error {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeOut)
 	defer cancel()
 
