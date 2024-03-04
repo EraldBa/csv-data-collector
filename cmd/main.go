@@ -5,21 +5,15 @@ import (
 	"csv-data-collector/repository"
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
 	"os"
-	"sync"
 
 	"github.com/go-sql-driver/mysql"
 )
 
 func main() {
-	data, err := os.ReadFile("config.json")
-	exitIfError(err)
-
-	config := &models.Config{}
-
-	err = json.Unmarshal(data, config)
+	config, err := getConfig()
 	exitIfError(err)
 
 	err = config.RunChecks()
@@ -32,31 +26,32 @@ func main() {
 
 	dbConf := repository.NewDBConf(conn)
 
-	wg := &sync.WaitGroup{}
+	dbConf.SaveDevices(config)
+}
 
-	for _, device := range config.Devices {
-		wg.Add(1)
-		go func(device *models.Device) {
-			defer wg.Done()
-
-			err = dbConf.SaveCSVDataFor(device)
-			if err != nil {
-				log.Println("ERROR: Could not save data for device with error:", err)
-				return
-			}
-
-			log.Println("Saved device data successfully for:", device.Name)
-		}(&device)
+// getConfig reads the config.json file and returns a Config with
+// the data or the error that occured
+func getConfig() (*models.Config, error) {
+	file, err := os.ReadFile("config.json")
+	if err != nil {
+		return nil, err
 	}
 
-	wg.Wait()
+	config := &models.Config{}
+
+	err = json.Unmarshal(file, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
 }
 
 // opendDBConn opens mysql db connection using the provided DBInfo conf
 // and returns the connection or the error that occured
 func openDBConn(dbInfo *models.DBInfo) (*sql.DB, error) {
 	if dbInfo.Name == "" {
-		return nil, fmt.Errorf("no database name provided")
+		return nil, errors.New("no database name provided")
 	}
 
 	if dbInfo.Username == "" {

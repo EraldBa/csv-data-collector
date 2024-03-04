@@ -5,7 +5,9 @@ import (
 	"csv-data-collector/models"
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
+	"sync"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -27,16 +29,39 @@ func NewDBConf(conn *sql.DB) *DBConf {
 	}
 }
 
+// SaveDevices saves data from all devices in the config
+// concurrently. It logs save info for each device to stdout
+func (d *DBConf) SaveDevices(config *models.Config) {
+	wg := &sync.WaitGroup{}
+
+	for _, device := range config.Devices {
+		wg.Add(1)
+		go func(device *models.Device) {
+			defer wg.Done()
+
+			err := d.SaveCSVDataFor(device)
+			if err != nil {
+				log.Printf("ERROR: Could not save data for device %s with error: %s\n", device.Name, err.Error())
+				return
+			}
+
+			log.Println("Saved device data successfully for:", device.Name)
+		}(&device)
+	}
+
+	wg.Wait()
+}
+
 // SaveCSVDataFor saves the csv data for the provided device to the
 // appropriate table in the db
-func (conf *DBConf) SaveCSVDataFor(device *models.Device) error {
+func (d *DBConf) SaveCSVDataFor(device *models.Device) error {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeOut)
 	defer cancel()
 
 	// checking if db table exists, if not, create it
-	row := conf.DB.QueryRowContext(ctx, "SELECT * FROM "+device.Name)
+	row := d.DB.QueryRowContext(ctx, "SELECT * FROM "+device.Name)
 	if row.Err() != nil {
-		err := conf.CreateTableFor(device)
+		err := d.createTableFor(device)
 		if err != nil {
 			return err
 		}
@@ -51,19 +76,19 @@ func (conf *DBConf) SaveCSVDataFor(device *models.Device) error {
 
 	query := generateCSVInsertQuery(device, rowCount)
 
-	_, err = conf.DB.ExecContext(ctx, query, records...)
+	_, err = d.DB.ExecContext(ctx, query, records...)
 
 	return err
 }
 
 // CreateTableFor creates a table in the db for specified device
-func (conf *DBConf) CreateTableFor(device *models.Device) error {
+func (d *DBConf) createTableFor(device *models.Device) error {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeOut)
 	defer cancel()
 
 	query := generateCSVCreateTableQuery(device)
 
-	_, err := conf.DB.ExecContext(ctx, query)
+	_, err := d.DB.ExecContext(ctx, query)
 
 	return err
 }
