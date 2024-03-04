@@ -16,25 +16,27 @@ import (
 // DBConf holds the app database configurations
 // and database connection
 type DBConf struct {
-	DB *sql.DB
+	AppConf *models.Config
+	DB      *sql.DB
 }
 
 const ctxTimeOut = 30 * time.Second
 
 // NewDBConf returns a new instance of DBConf with the
 // provided db connection
-func NewDBConf(conn *sql.DB) *DBConf {
+func NewDBConf(conn *sql.DB, config *models.Config) *DBConf {
 	return &DBConf{
-		DB: conn,
+		AppConf: config,
+		DB:      conn,
 	}
 }
 
-// SaveDevices saves data from all devices in the config
+// SaveDevices saves data from all devices in the app config
 // concurrently. It logs save info for each device to stdout
-func (d *DBConf) SaveDevices(config *models.Config) {
+func (d *DBConf) SaveDevices() {
 	wg := &sync.WaitGroup{}
 
-	for _, device := range config.Devices {
+	for _, device := range d.AppConf.Devices {
 		wg.Add(1)
 		go func(device *models.Device) {
 			defer wg.Done()

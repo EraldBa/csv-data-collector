@@ -12,27 +12,39 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
+const (
+	logPath  = "csv_data_collector.log"
+	confPath = "config.json"
+)
+
 func main() {
+	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	panicIfError(err)
+
+	defer logFile.Close()
+
+	log.SetOutput(logFile)
+
 	config, err := getConfig()
-	exitIfError(err)
+	panicIfError(err)
 
 	err = config.RunChecks()
-	exitIfError(err)
+	panicIfError(err)
 
 	conn, err := openDBConn(&config.DbInfo)
-	exitIfError(err)
+	panicIfError(err)
 
 	defer conn.Close()
 
-	dbConf := repository.NewDBConf(conn)
+	dbConf := repository.NewDBConf(conn, config)
 
-	dbConf.SaveDevices(config)
+	dbConf.SaveDevices()
 }
 
 // getConfig reads the config.json file and returns a Config with
 // the data or the error that occured
 func getConfig() (*models.Config, error) {
-	file, err := os.ReadFile("config.json")
+	file, err := os.ReadFile(confPath)
 	if err != nil {
 		return nil, err
 	}
@@ -83,10 +95,10 @@ func openDBConn(dbInfo *models.DBInfo) (*sql.DB, error) {
 	return db, nil
 }
 
-// exitIfError performs log.Fatal() on the error if it exists
+// panicIfError performs log.Fatal() on the error if it exists
 // This function exists just to save time by preventing repetition
-func exitIfError(err error) {
+func panicIfError(err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Panicln(err)
 	}
 }
