@@ -19,6 +19,7 @@ var logPath, configPath *string
 func init() {
 	logPath = flag.String("logPath", "", "The path to create and write the logs")
 	configPath = flag.String("configPath", "", "The config.json path")
+	
 	help := flag.Bool("help", false, "Prints this help message")
 
 	flag.Parse()
