@@ -6,19 +6,36 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"flag"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/go-sql-driver/mysql"
 )
 
-const (
-	logPath  = "csv_data_collector.log"
-	confPath = "config.json"
-)
+var logPath, configPath *string
+
+func init() {
+	logPath = flag.String("logPath", "", "The path to create and write the logs")
+	configPath = flag.String("configPath", "", "The config.json path")
+	help := flag.Bool("help", false, "Prints this help message")
+
+	flag.Parse()
+
+	if *help {
+		fmt.Println("Usage:")
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
+
+	if *logPath == "" || *configPath == "" {
+		log.Fatal("All required paths not provided, exiting...")
+	}
+}
 
 func main() {
-	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	logFile, err := os.OpenFile(*logPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	panicIfError(err)
 
 	defer logFile.Close()
@@ -44,7 +61,7 @@ func main() {
 // getConfig reads the config.json file and returns a Config with
 // the data or the error that occured
 func getConfig() (*models.Config, error) {
-	file, err := os.ReadFile(confPath)
+	file, err := os.ReadFile(*configPath)
 	if err != nil {
 		return nil, err
 	}
