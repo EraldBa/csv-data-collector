@@ -32,7 +32,7 @@ type Device struct {
 	CsvOptions CSVOptions `json:"csv_options"`
 }
 
-// CSVOptions holds the csv config info
+// CSVOptions holds the csv options info
 type CSVOptions struct {
 	SkipRows           uint            `json:"skip_rows"`
 	Delimiter          string          `json:"delimiter"`
@@ -50,56 +50,53 @@ type ColumnOptions struct {
 }
 
 // RunChecks runs basic checks on Config to make sure
-// data provided in json is correct
+// data provided in the json config is correct
 func (c *Config) RunChecks() error {
 	if c.Devices == nil || len(c.Devices) < 1 {
 		return errors.New("no devices provided")
 	}
 
+	if c.DbInfo.Name == "" {
+		return errors.New("no database name provided")
+	}
+
 	for i, device := range c.Devices {
 		if device.Name == "" {
-			return fmt.Errorf("no device name specified at json index: %d", i)
+			return fmt.Errorf("no device name specified at json index %d", i)
 		}
 
 		if device.Address != "" && device.FilePath != "" {
-			return fmt.Errorf("can't have both device address and data filepath set for device %s at json index: %d", device.Name, i)
+			return fmt.Errorf("can't have both device address and data filepath set for device %s at json index %d", device.Name, i)
 		}
 
 		if device.FilePath != "" {
 			if _, err := os.Stat(device.FilePath); err != nil {
-				return fmt.Errorf("device data path %s is not valid or file does not exist at json index: %d", device.FilePath, i)
+				return fmt.Errorf("device data path %s is not valid or file does not exist at json index %d", device.FilePath, i)
 			}
 		}
 
 		if device.Address != "" {
 			if _, err := url.ParseRequestURI(device.Address); err != nil {
-				return fmt.Errorf("device url address %s not valid at json index: %d", device.Address, i)
+				return fmt.Errorf("device url address %s not valid at json index %d", device.Address, i)
 			}
 		}
 
-		if err := device.RunCSVChecks(); err != nil {
-			return err
+		if device.CsvOptions.Columns == nil || len(device.CsvOptions.Columns) < 1 {
+			return fmt.Errorf("no columns specified for device %s at json index %d", device.Name, i)
 		}
-	}
 
-	return nil
-}
-
-// RunCSVChecks runs the checks for the CsvOptions member of the Device struct
-func (d *Device) RunCSVChecks() error {
-	if d.CsvOptions.Columns == nil || len(d.CsvOptions.Columns) < 1 {
-		return fmt.Errorf("no columns specified for device: %s", d.Name)
-	}
-
-	if len(d.CsvOptions.Delimiter) > 1 {
-		return fmt.Errorf("csv delimiter %s for device %s is not valid", d.CsvOptions.Delimiter, d.Name)
+		if len(device.CsvOptions.Delimiter) > 1 {
+			return fmt.Errorf("csv delimiter %s for device %s is not valid at json index %d", device.CsvOptions.Delimiter, device.Name, i)
+		}
 	}
 
 	return nil
 }
 
 // GetFilteredRecords gets the records with the deisred column data
-// from the appropriate data source, all according to the device config info
+// from the appropriate data source, all according to the device config info,
+// The records returned are in the appropriate format for direct usage in
+// the mysql insert query
 func (d *Device) GetFilteredRecords() ([]any, error) {
 	var body io.ReadCloser
 

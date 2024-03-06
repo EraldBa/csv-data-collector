@@ -5,7 +5,6 @@ import (
 	"csv-data-collector/repository"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -19,7 +18,7 @@ var logPath, configPath *string
 func init() {
 	logPath = flag.String("logPath", "", "The path to create and write the logs")
 	configPath = flag.String("configPath", "", "The config.json path")
-	
+
 	help := flag.Bool("help", false, "Prints this help message")
 
 	flag.Parse()
@@ -59,8 +58,8 @@ func main() {
 	dbConf.SaveDevices()
 }
 
-// getConfig reads the config.json file and returns a Config with
-// the data or the error that occured
+// getConfig reads the config file and returns a models.Config
+// struct with the data or the error that occured
 func getConfig() (*models.Config, error) {
 	file, err := os.ReadFile(*configPath)
 	if err != nil {
@@ -77,13 +76,9 @@ func getConfig() (*models.Config, error) {
 	return config, nil
 }
 
-// opendDBConn opens mysql db connection using the provided DBInfo conf
+// opendDBConn opens the mysql db connection using the provided DBInfo
 // and returns the connection or the error that occured
 func openDBConn(dbInfo *models.DBInfo) (*sql.DB, error) {
-	if dbInfo.Name == "" {
-		return nil, errors.New("no database name provided")
-	}
-
 	if dbInfo.Username == "" {
 		dbInfo.Username = "root"
 	}
@@ -92,8 +87,8 @@ func openDBConn(dbInfo *models.DBInfo) (*sql.DB, error) {
 		dbInfo.Address = "localhost:3306"
 	}
 
-	// creating a mysql.Config only for the FormatDSN
-	// method, so that to ensure the dsn string is formatted properly
+	// creating a mysql.Config only for the FormatDSN method,
+	// so as to ensure the dsn string is formatted properly
 	mysqlConf := mysql.Config{
 		User:   dbInfo.Username,
 		Passwd: dbInfo.Password,
@@ -113,8 +108,10 @@ func openDBConn(dbInfo *models.DBInfo) (*sql.DB, error) {
 	return db, nil
 }
 
-// panicIfError performs log.Fatal() on the error if it exists
-// This function exists just to save time by preventing repetition
+// panicIfError performs log.Panicln() on the error if it exists.
+// This function exists just to save time by preventing repetition.
+// log.Panicln() is used instead of log.Fatal() so that the deferred
+// funcs are allowed to run
 func panicIfError(err error) {
 	if err != nil {
 		log.Panicln(err)

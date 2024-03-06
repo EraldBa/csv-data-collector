@@ -13,7 +13,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// dbConf holds the app database configurations
+// dbConf holds the app configuration
 // and database connection
 type dbConf struct {
 	AppConf *models.Config
@@ -23,7 +23,7 @@ type dbConf struct {
 const ctxTimeOut = 30 * time.Second
 
 // New returns a new instance of dbConf with the
-// provided db connection
+// provided db connection and app config
 func New(conn *sql.DB, config *models.Config) *dbConf {
 	return &dbConf{
 		AppConf: config,
@@ -32,7 +32,7 @@ func New(conn *sql.DB, config *models.Config) *dbConf {
 }
 
 // SaveDevices saves data from all devices in the app config
-// concurrently. It logs save info for each device to stdout
+// concurrently. It logs save info for each device.
 func (d *dbConf) SaveDevices() {
 	wg := &sync.WaitGroup{}
 
@@ -83,7 +83,7 @@ func (d *dbConf) SaveCSVDataFor(device *models.Device) error {
 	return err
 }
 
-// CreateTableFor creates a table in the db for specified device
+// createTableFor creates a table in the db for specified device
 func (d *dbConf) createTableFor(device *models.Device) error {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeOut)
 	defer cancel()
