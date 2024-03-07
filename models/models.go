@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 )
 
 // Config holds the config.json info
@@ -47,6 +48,10 @@ type ColumnOptions struct {
 	Name         string `json:"name"`
 	SQLType      string `json:"sql_type"`
 	SQLFormatter string `json:"sql_formatter"`
+}
+
+func init() {
+	http.DefaultClient.Timeout = time.Second * 15
 }
 
 // RunChecks runs basic checks on Config to make sure
