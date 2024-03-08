@@ -52,6 +52,8 @@ func main() {
 	dbConf := repository.New(conn, config)
 
 	dbConf.SaveDevices()
+
+	log.Println("--- PROGRAM TERMINATED ---")
 }
 
 // getConfig reads the config file and returns a models.Config

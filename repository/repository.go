@@ -47,7 +47,7 @@ func (d *dbConf) SaveDevices() {
 				return
 			}
 
-			log.Println("Saved device data successfully for:", device.Name)
+			log.Println("INFO: Saved device data successfully for:", device.Name)
 		}(&device)
 	}
 
