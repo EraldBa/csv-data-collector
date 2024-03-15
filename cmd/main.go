@@ -1,8 +1,8 @@
 package main
 
 import (
-	"csv-data-collector/models"
-	"csv-data-collector/repository"
+	"github.com/EraldBa/csv-data-collector/models"
+	"github.com/EraldBa/csv-data-collector/repository"
 	"database/sql"
 	"encoding/json"
 	"flag"

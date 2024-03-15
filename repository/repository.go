@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"csv-data-collector/models"
+	"github.com/EraldBa/csv-data-collector/models"
 	"database/sql"
 	"fmt"
 	"log"
