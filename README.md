@@ -1,4 +1,4 @@
-# CSV Data Collector A simple cv 
+# CSV Data Collector
 
 ### A simple data collector application that's designed to automate data retrieval and storage from CSV files without any manual adjustment to the program's codebase. 
 
