@@ -50,13 +50,13 @@ Example configuration:
 - **column_index** -> Specifies the index that the column is located in the csv, in order to retrieve the values correctly. Specifying the index instead of the column name helps when there are nested columns in the csv file and/or columns that have the same names.
 
 ### Optionals
-- csv_options.**skiprows** -> How many rows to skip when reading the csv file.
+- csv_options.**skip_rows** -> How many rows to skip when reading the csv file.
 - csv_options.**create_table_opts** -> If the table for the device does not exist, the program creates it automatically given the device name as the table name and the columns with the provided information. However, it is highly reccommended to specify a unique key so as to avoid duplicate columns during data insertion. This is where we would specify the sql query for it or any other extra option.
 - csv_options.**delimiter** -> The csv delimiter, if not specified the csv.Reader assumes the value: ",".
 - columns.**sql_formatter** -> The formatting/transformation function to apply to the csv value before inserting it to the database. The function passed should have at least and only one question mark (?) as a placeholder for the value in the function.
-- db_info.**username** -> Database username, when empty the program will assume the value "root"
+- db_info.**username** -> Database username, when left empty the program will assume the value "root"
 - db_info.**password** -> Database user password, can be left empty for no password
-- db_info.**address** -> Database address, when empty the program will assume the value "localhost:3306" 
+- db_info.**address** -> Database address, when left empty the program will assume the value "localhost:3306" 
 
 ## Useful info
 
