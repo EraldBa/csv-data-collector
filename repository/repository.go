@@ -2,13 +2,14 @@ package repository
 
 import (
 	"context"
-	"github.com/EraldBa/csv-data-collector/models"
 	"database/sql"
 	"fmt"
 	"log"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/EraldBa/csv-data-collector/models"
 
 	_ "github.com/go-sql-driver/mysql"
 )

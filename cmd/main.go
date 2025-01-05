@@ -1,14 +1,15 @@
 package main
 
 import (
-	"github.com/EraldBa/csv-data-collector/models"
-	"github.com/EraldBa/csv-data-collector/repository"
 	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/EraldBa/csv-data-collector/models"
+	"github.com/EraldBa/csv-data-collector/repository"
 
 	"github.com/go-sql-driver/mysql"
 )
@@ -49,9 +50,9 @@ func main() {
 
 	defer conn.Close()
 
-	dbConf := repository.New(conn, config)
+	repo := repository.New(conn, config)
 
-	dbConf.SaveDevices()
+	repo.SaveDevices()
 
 	log.Println("--- PROGRAM TERMINATED ---")
 }

@@ -76,13 +76,13 @@ func (c *Config) RunChecks() error {
 
 		if device.FilePath != "" {
 			if _, err := os.Stat(device.FilePath); err != nil {
-				return fmt.Errorf("device data path %s is not valid or file does not exist at json index %d", device.FilePath, i)
+				return fmt.Errorf("problem statting device data file path %s at json index %d with error: %s", device.FilePath, i, err.Error())
 			}
 		}
 
 		if device.Address != "" {
 			if _, err := url.ParseRequestURI(device.Address); err != nil {
-				return fmt.Errorf("device url address %s not valid at json index %d", device.Address, i)
+				return fmt.Errorf("problem parsing device data url address %s at json index %d with error: %s", device.Address, i, err.Error())
 			}
 		}
 
