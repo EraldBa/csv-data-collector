@@ -50,13 +50,16 @@ Example configuration:
 - **column_index** -> Specifies the index that the column is located in the csv, in order to retrieve the values correctly. Specifying the index instead of the column name helps when there are nested columns in the csv file and/or columns that have the same names.
 
 ### Optionals
-- **skiprows** -> How many rows to skip when reading the csv file.
-- **create_table_opts** -> If the table for the device does not exist, the program creates it automatically given the device name as the table name and the columns with the provided information. However, usually we want to specify a unique key so as to avoid duplicate columns during data insertion. This is where we would specify the sql query for it or any other extra option.
-- **sql_formatter** -> The formatting/transformation function to apply to the csv value before inserting it to the database. The function passed should have at least and only one question mark (?) as a placeholder for the value in the function.
+- csv_options.**skiprows** -> How many rows to skip when reading the csv file.
+- csv_options.**create_table_opts** -> If the table for the device does not exist, the program creates it automatically given the device name as the table name and the columns with the provided information. However, it is highly reccommended to specify a unique key so as to avoid duplicate columns during data insertion. This is where we would specify the sql query for it or any other extra option.
+- csv_options.**delimiter** -> The csv delimiter, if not specified the csv.Reader assumes the value: ",".
+- columns.**sql_formatter** -> The formatting/transformation function to apply to the csv value before inserting it to the database. The function passed should have at least and only one question mark (?) as a placeholder for the value in the function.
+- db_info.**username** -> Database username, when empty the program will assume the value "root"
+- db_info.**password** -> Database user password, can be left empty for no password
+- db_info.**address** -> Database address, when empty the program will assume the value "localhost:3306" 
 
 ## Useful info
-The username | password | address fields in the db_info can be completely omitted and the program will assume the values "root" | "" | "localhost:3306" respectively.
 
-The program ***does not*** create primary keys for generated tables by default. When inserting values, it uses the "INSERT IGNORE" statement, which automatically increments the primary key (if it's set to AUTOINCREMENT) even if the value is ignored due to a unique key being equal to an existing value. That's why it's avoided here, but you can specify a primary key in the **create_table_opts** if you wish.
+The program **DOES NOT** create primary keys for generated tables by default. When inserting values, it uses the "INSERT IGNORE" statement, which automatically increments the primary key (if it's set to AUTOINCREMENT) even if the value is ignored due to a unique key being equal to an existing value. That's why it's avoided here, but you can specify a primary key in the **create_table_opts** if you wish.
 
 Only valid MySQL syntax can be used in the config.json
