@@ -71,27 +71,27 @@ func (c *Config) RunChecks() error {
 		}
 
 		if device.Address != "" && device.FilePath != "" {
-			return fmt.Errorf("can't have both device address and data filepath set for device %s at json index %d", device.Name, i)
+			return fmt.Errorf("can't have both device address and data filepath set for device '%s' at json index %d", device.Name, i)
 		}
 
 		if device.FilePath != "" {
 			if _, err := os.Stat(device.FilePath); err != nil {
-				return fmt.Errorf("problem statting device data file path %s at json index %d with error: %s", device.FilePath, i, err.Error())
+				return fmt.Errorf("problem statting device data file path '%s' at json index %d with error: %s", device.FilePath, i, err.Error())
 			}
 		}
 
 		if device.Address != "" {
 			if _, err := url.ParseRequestURI(device.Address); err != nil {
-				return fmt.Errorf("problem parsing device data url address %s at json index %d with error: %s", device.Address, i, err.Error())
+				return fmt.Errorf("problem parsing device data url address '%s' at json index %d with error: %s", device.Address, i, err.Error())
 			}
 		}
 
 		if device.CsvOptions.Columns == nil || len(device.CsvOptions.Columns) < 1 {
-			return fmt.Errorf("no columns specified for device %s at json index %d", device.Name, i)
+			return fmt.Errorf("no columns specified for device '%s' at json index %d", device.Name, i)
 		}
 
 		if len(device.CsvOptions.Delimiter) > 1 {
-			return fmt.Errorf("csv delimiter %s for device %s is not valid at json index %d", device.CsvOptions.Delimiter, device.Name, i)
+			return fmt.Errorf("csv delimiter '%s' for device '%s' is not valid at json index %d", device.CsvOptions.Delimiter, device.Name, i)
 		}
 	}
 

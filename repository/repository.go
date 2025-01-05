@@ -44,7 +44,7 @@ func (d *dbConf) SaveDevices() {
 
 			err := d.SaveCSVDataFor(device)
 			if err != nil {
-				log.Printf("ERROR: Could not save data for device %s with error: %s\n", device.Name, err.Error())
+				log.Printf("ERROR: Could not save data for device '%s' with error: %s\n", device.Name, err.Error())
 				return
 			}
 
@@ -72,7 +72,7 @@ func (d *dbConf) SaveCSVDataFor(device *models.Device) error {
 
 	records, err := device.GetFilteredRecords()
 	if err != nil {
-		return fmt.Errorf("could not get csv records from device: %s", device.Name)
+		return fmt.Errorf("could not get csv records from device '%s' with error: %s", device.Name, err.Error())
 	}
 
 	rowCount := len(records) / len(device.CsvOptions.Columns)
