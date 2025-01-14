@@ -33,7 +33,7 @@ func New(conn *sql.DB, config *models.Config) *dbConf {
 }
 
 // SaveDevices saves data from all devices in the app config
-// concurrently. It logs save info for each device.
+// concurrently. It logs save info or the error for each device.
 func (d *dbConf) SaveDevices() {
 	wg := &sync.WaitGroup{}
 
@@ -45,7 +45,7 @@ func (d *dbConf) SaveDevices() {
 
 			err := d.SaveCSVDataFor(device)
 			if err != nil {
-				log.Printf("ERROR: Could not save data for device '%s' with error: %s\n", device.Name, err.Error())
+				log.Printf("ERROR: Could not save data for device %q with error: %s\n", device.Name, err.Error())
 				return
 			}
 
@@ -99,43 +99,82 @@ func (d *dbConf) createTableFor(device *models.Device) error {
 // generateCSVCreateTableQuery generates table creation
 // mysql queries for the provided device
 func generateCSVCreateTableQuery(device *models.Device) string {
-	query := "CREATE TABLE " + device.Name + " ("
+	queryBuilder := strings.Builder{}
 
-	for _, colOpts := range device.CsvOptions.Columns {
-		query += colOpts.Name + " " + colOpts.SQLType + ","
+	queryBuilder.WriteString("CREATE TABLE ")
+	queryBuilder.WriteString(device.Name)
+	queryBuilder.WriteString(" (")
+
+	for i, colOpts := range device.CsvOptions.Columns {
+		// insert commas after first column
+		if i > 0 {
+			queryBuilder.WriteString(",")
+		}
+
+		queryBuilder.WriteString(colOpts.Name)
+		queryBuilder.WriteString(" ")
+		queryBuilder.WriteString(colOpts.SQLType)
 	}
 
-	query += device.CsvOptions.CreateTableOptions
-	query = strings.TrimSuffix(query, ",")
-	query += ")"
+	if device.CsvOptions.CreateTableOptions != "" {
+		queryBuilder.WriteString(",")
+		queryBuilder.WriteString(device.CsvOptions.CreateTableOptions)
+	}
 
-	return query
+	queryBuilder.WriteString(")")
+
+	return queryBuilder.String()
 }
 
 // generateCSVInsertQuery generates insert mysql queries
 // for the provided device
 func generateCSVInsertQuery(device *models.Device, rowCount int) string {
-	columnNames, vals := "(", "("
+	queryBuilder := strings.Builder{}
 
-	for _, colOpts := range device.CsvOptions.Columns {
-		columnNames += colOpts.Name + ","
+	// Starting the query
+	queryBuilder.WriteString("INSERT IGNORE INTO ")
+	queryBuilder.WriteString(device.Name)
+	queryBuilder.WriteString(" (")
 
+	// valuesBuilder stores the value placeholders
+	valuesBuilder := strings.Builder{}
+	valuesBuilder.WriteString("(")
+
+	// Creating columns and value placeholders
+	for i, colOpts := range device.CsvOptions.Columns {
+		// insert commas after first column and value
+		if i > 0 {
+			queryBuilder.WriteString(",")
+			valuesBuilder.WriteString(",")
+		}
+
+		queryBuilder.WriteString(colOpts.Name)
+
+		// inserting sql formatter or default value placeholder
 		if colOpts.SQLFormatter != "" {
-			vals += colOpts.SQLFormatter + ","
+			valuesBuilder.WriteString(colOpts.SQLFormatter)
 		} else {
-			vals += "?,"
+			valuesBuilder.WriteString("?")
 		}
 	}
+	// Finishing values
+	valuesBuilder.WriteString(")")
+	vals := valuesBuilder.String()
 
-	vals = strings.TrimSuffix(vals, ",")
-	vals += "),"
+	queryBuilder.WriteString(") VALUES ")
 
-	columnNames = strings.TrimSuffix(columnNames, ",")
-	columnNames += ")"
+	// Inserting first value placeholders string
+	// without the comma prefix
+	queryBuilder.WriteString(vals)
+	rowCount--
 
-	query := fmt.Sprintf("INSERT IGNORE INTO %s %s VALUES", device.Name, columnNames)
-	query += strings.Repeat(vals, rowCount)
-	query = strings.TrimSuffix(query, ",")
+	// Generating the rest of the value placeholders
+	// joined by commas
+	vals = strings.Repeat(","+vals, rowCount)
 
-	return query
+	// Inserting the rest of the value placeholders to the query
+	queryBuilder.Grow(len(vals))
+	queryBuilder.WriteString(vals)
+
+	return queryBuilder.String()
 }

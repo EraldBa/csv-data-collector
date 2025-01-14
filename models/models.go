@@ -44,20 +44,16 @@ type CSVOptions struct {
 // ColumnOptions holds the options for retrieving and storing
 // desired column info
 type ColumnOptions struct {
-	ColumnIndex  uint   `json:"column_index"`
+	ColumnIndex  int    `json:"column_index"`
 	Name         string `json:"name"`
 	SQLType      string `json:"sql_type"`
 	SQLFormatter string `json:"sql_formatter"`
 }
 
-func init() {
-	http.DefaultClient.Timeout = time.Second * 15
-}
-
 // RunChecks runs basic checks on Config to make sure
 // data provided in the json config is correct
 func (c *Config) RunChecks() error {
-	if c.Devices == nil || len(c.Devices) < 1 {
+	if len(c.Devices) < 1 {
 		return errors.New("no devices provided")
 	}
 
@@ -71,19 +67,19 @@ func (c *Config) RunChecks() error {
 		}
 
 		if device.Address != "" && device.FilePath != "" {
-			return fmt.Errorf("can't have both device address and data filepath set for device %q at json index %d", device.Name, i)
+			return fmt.Errorf("can't have both device data url address and data filepath set for device %q at json index %d", device.Name, i)
 		}
 
 		if device.FilePath != "" {
 			if _, err := os.Stat(device.FilePath); err != nil {
 				return fmt.Errorf("problem statting device data file path %q for device %q at json index %d with error: %s", device.FilePath, device.Name, i, err.Error())
 			}
-		}
-
-		if device.Address != "" {
+		} else if device.Address != "" {
 			if _, err := url.ParseRequestURI(device.Address); err != nil {
 				return fmt.Errorf("problem parsing device data url address %q for device %q at json index %d with error: %s", device.Address, device.Name, i, err.Error())
 			}
+		} else {
+			return fmt.Errorf("no device url address or filepath specified for device %q at json index %d", device.Name, i)
 		}
 
 		if device.CsvOptions.Columns == nil || len(device.CsvOptions.Columns) < 1 {
@@ -93,6 +89,38 @@ func (c *Config) RunChecks() error {
 		if len(device.CsvOptions.Delimiter) > 1 {
 			return fmt.Errorf("csv delimiter %q for device %q is not valid at json index %d", device.CsvOptions.Delimiter, device.Name, i)
 		}
+
+		// checking column options
+		err := device.runColumnChecks()
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
+// runColumnChecks is used internally by RunChecks to
+// run basic data checks on the device csv column options
+func (d *Device) runColumnChecks() error {
+	if len(d.CsvOptions.Columns) < 1 {
+		return fmt.Errorf("no column options specified for device %q", d.Name)
+	}
+
+	for i, colOpts := range d.CsvOptions.Columns {
+		if colOpts.Name == "" {
+			return fmt.Errorf("column name cannot be empty at index %d in device %q column options", i, d.Name)
+		}
+
+		if colOpts.ColumnIndex < 0 {
+			return fmt.Errorf("invalid index for column %q in device %q options", colOpts.Name, d.Name)
+		}
+
+		if colOpts.SQLType == "" {
+			return fmt.Errorf("sql type for column %q at device %q options cannot be emtpy", colOpts.Name, d.Name)
+		}
+
 	}
 
 	return nil
@@ -106,6 +134,11 @@ func (d *Device) GetFilteredRecords() ([]any, error) {
 	var body io.ReadCloser
 
 	if d.Address != "" {
+		// if timeout is not set, set it to 15 seconds
+		if http.DefaultClient.Timeout == 0 {
+			http.DefaultClient.Timeout = time.Second * 15
+		}
+
 		res, err := http.Get(d.Address)
 		if err != nil {
 			return nil, err
@@ -143,17 +176,25 @@ func (d *Device) GetFilteredRecords() ([]any, error) {
 	}
 
 	records := []any{}
-	for {
+	for i := 0; ; i++ {
 		rec, err := reader.Read()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
 
-			return nil, err
+			return nil, fmt.Errorf("error at row index %d with error: %s", i, err.Error())
+		}
+
+		if len(rec) < len(d.CsvOptions.Columns) {
+			return nil, fmt.Errorf("error at row index %d: row in csv has less columns than total columns specified by the device %q configuration", i, d.Name)
 		}
 
 		for _, colOpts := range d.CsvOptions.Columns {
+			if len(rec) < colOpts.ColumnIndex {
+				return nil, fmt.Errorf("error at row index %d:cannot get column value with name %q from row by indexing; row length is smaller than column index (%d)", i, colOpts.Name, colOpts.ColumnIndex)
+			}
+
 			records = append(records, rec[colOpts.ColumnIndex])
 		}
 	}
