@@ -32,7 +32,7 @@ func main() {
 		log.Fatal("All required paths not provided, exiting...")
 	}
 
-	logFile, err := os.OpenFile(*logPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	logFile, err := openLogFile(logPath)
 	panicIfError(err)
 
 	defer logFile.Close()
@@ -57,8 +57,14 @@ func main() {
 	log.Println("--- PROGRAM TERMINATED ---")
 }
 
+// openLogFile opens the log file with the appropriate flags and permission
+// and returns the file pointer and the error
+func openLogFile(logPath *string) (*os.File, error) {
+	return os.OpenFile(*logPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+}
+
 // getConfig reads the config file and returns a models.Config
-// struct with the data or the error that occured
+// struct with the data and the error
 func getConfig(configPath *string) (*models.Config, error) {
 	file, err := os.ReadFile(*configPath)
 	if err != nil {
@@ -76,7 +82,7 @@ func getConfig(configPath *string) (*models.Config, error) {
 }
 
 // opendDBConn opens the mysql db connection using the provided DBInfo
-// and returns the connection or the error that occured
+// and returns the connection and the error
 func openDBConn(dbInfo *models.DBInfo) (*sql.DB, error) {
 	if dbInfo.Username == "" {
 		dbInfo.Username = "root"
@@ -100,6 +106,8 @@ func openDBConn(dbInfo *models.DBInfo) (*sql.DB, error) {
 		return nil, err
 	}
 
+	// Pinging the database to make sure connection
+	// is still alive
 	if err = db.Ping(); err != nil {
 		return nil, err
 	}
@@ -107,10 +115,10 @@ func openDBConn(dbInfo *models.DBInfo) (*sql.DB, error) {
 	return db, nil
 }
 
-// panicIfError performs log.Panicln() on the error if it exists.
+// panicIfError performs log.Panicln() on the error if it's not nil.
 // This function exists just to save time by preventing repetition.
 // log.Panicln() is used instead of log.Fatal() so that the deferred
-// funcs are allowed to run
+// funcs are able to run
 func panicIfError(err error) {
 	if err != nil {
 		log.Panicln(err)

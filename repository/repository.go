@@ -37,8 +37,9 @@ func New(conn *sql.DB, config *models.Config) *dbConf {
 func (d *dbConf) SaveDevices() {
 	wg := &sync.WaitGroup{}
 
+	wg.Add(len(d.AppConf.Devices))
+
 	for _, device := range d.AppConf.Devices {
-		wg.Add(1)
 		go func(device *models.Device) {
 			defer wg.Done()
 
@@ -49,7 +50,7 @@ func (d *dbConf) SaveDevices() {
 			}
 
 			log.Println("INFO: Saved device data successfully for:", device.Name)
-		}(&device)
+		}(device)
 	}
 
 	wg.Wait()
@@ -62,17 +63,16 @@ func (d *dbConf) SaveCSVDataFor(device *models.Device) error {
 	defer cancel()
 
 	// checking if db table exists, if not, create it
-	row := d.DB.QueryRowContext(ctx, "SELECT * FROM "+device.Name)
-	if row.Err() != nil {
-		err := d.createTableFor(device)
-		if err != nil {
+	err := d.DB.QueryRowContext(ctx, "SELECT * FROM "+device.Name).Err()
+	if err != nil {
+		if err = d.createTableFor(device); err != nil {
 			return err
 		}
 	}
 
 	records, err := device.GetFilteredRecords()
 	if err != nil {
-		return fmt.Errorf("could not get csv records from device '%s' with error: %s", device.Name, err.Error())
+		return fmt.Errorf("could not get csv records from device %q with error: %s", device.Name, err.Error())
 	}
 
 	rowCount := len(records) / len(device.CsvOptions.Columns)

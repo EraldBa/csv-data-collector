@@ -13,8 +13,8 @@ import (
 
 // Config holds the config.json info
 type Config struct {
-	DbInfo  DBInfo   `json:"db_info"`
-	Devices []Device `json:"devices"`
+	DbInfo  DBInfo    `json:"db_info"`
+	Devices []*Device `json:"devices"`
 }
 
 // DBInfo holds the database config info for the mysql connection
@@ -71,27 +71,27 @@ func (c *Config) RunChecks() error {
 		}
 
 		if device.Address != "" && device.FilePath != "" {
-			return fmt.Errorf("can't have both device address and data filepath set for device '%s' at json index %d", device.Name, i)
+			return fmt.Errorf("can't have both device address and data filepath set for device %q at json index %d", device.Name, i)
 		}
 
 		if device.FilePath != "" {
 			if _, err := os.Stat(device.FilePath); err != nil {
-				return fmt.Errorf("problem statting device data file path '%s' at json index %d with error: %s", device.FilePath, i, err.Error())
+				return fmt.Errorf("problem statting device data file path %q for device %q at json index %d with error: %s", device.FilePath, device.Name, i, err.Error())
 			}
 		}
 
 		if device.Address != "" {
 			if _, err := url.ParseRequestURI(device.Address); err != nil {
-				return fmt.Errorf("problem parsing device data url address '%s' at json index %d with error: %s", device.Address, i, err.Error())
+				return fmt.Errorf("problem parsing device data url address %q for device %q at json index %d with error: %s", device.Address, device.Name, i, err.Error())
 			}
 		}
 
 		if device.CsvOptions.Columns == nil || len(device.CsvOptions.Columns) < 1 {
-			return fmt.Errorf("no columns specified for device '%s' at json index %d", device.Name, i)
+			return fmt.Errorf("no columns specified for device %q at json index %d", device.Name, i)
 		}
 
 		if len(device.CsvOptions.Delimiter) > 1 {
-			return fmt.Errorf("csv delimiter '%s' for device '%s' is not valid at json index %d", device.CsvOptions.Delimiter, device.Name, i)
+			return fmt.Errorf("csv delimiter %q for device %q is not valid at json index %d", device.CsvOptions.Delimiter, device.Name, i)
 		}
 	}
 
@@ -127,6 +127,7 @@ func (d *Device) GetFilteredRecords() ([]any, error) {
 
 	reader := csv.NewReader(body)
 
+	// Specifying to have no field per record limit
 	reader.FieldsPerRecord = -1
 
 	if d.CsvOptions.Delimiter != "" {
@@ -135,12 +136,15 @@ func (d *Device) GetFilteredRecords() ([]any, error) {
 
 	// Skipping the rows specified
 	for range d.CsvOptions.SkipRows {
-		reader.Read()
+		_, err := reader.Read()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	records := []any{}
 	for {
-		record, err := reader.Read()
+		rec, err := reader.Read()
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -150,7 +154,7 @@ func (d *Device) GetFilteredRecords() ([]any, error) {
 		}
 
 		for _, colOpts := range d.CsvOptions.Columns {
-			records = append(records, record[colOpts.ColumnIndex])
+			records = append(records, rec[colOpts.ColumnIndex])
 		}
 	}
 
