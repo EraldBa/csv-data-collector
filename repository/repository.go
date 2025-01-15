@@ -172,8 +172,15 @@ func generateCSVInsertQuery(device *models.Device, rowCount int) string {
 	queryBuilder.WriteString(vals)
 	rowCount--
 
+	// if there's only one row, return the query here
+	if rowCount == 0 {
+		return queryBuilder.String()
+	}
+
 	// Generating the rest of the value placeholders
-	// joined by commas
+	// joined by commas. Using strings.Repeat here for
+	// more optimized value placeholder string generation
+	// since rows can be quite numerous
 	vals = strings.Repeat(","+vals, rowCount)
 
 	// Inserting the rest of the value placeholders to the query
