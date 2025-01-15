@@ -129,6 +129,10 @@ func generateCSVCreateTableQuery(device *models.Device) string {
 // generateCSVInsertQuery generates insert mysql queries
 // for the provided device
 func generateCSVInsertQuery(device *models.Device, rowCount int) string {
+	if rowCount < 1 {
+		return ""
+	}
+
 	queryBuilder := strings.Builder{}
 
 	// Starting the query

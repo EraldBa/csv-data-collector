@@ -82,7 +82,7 @@ func (c *Config) RunChecks() error {
 			return fmt.Errorf("no device url address or filepath specified for device %q at json index %d", device.Name, i)
 		}
 
-		if device.CsvOptions.Columns == nil || len(device.CsvOptions.Columns) < 1 {
+		if len(device.CsvOptions.Columns) < 1 {
 			return fmt.Errorf("no columns specified for device %q at json index %d", device.Name, i)
 		}
 
@@ -91,11 +91,9 @@ func (c *Config) RunChecks() error {
 		}
 
 		// checking column options
-		err := device.runColumnChecks()
-		if err != nil {
+		if err := device.runColumnChecks(); err != nil {
 			return err
 		}
-
 	}
 
 	return nil
@@ -169,8 +167,7 @@ func (d *Device) GetFilteredRecords() ([]any, error) {
 
 	// Skipping the rows specified
 	for range d.CsvOptions.SkipRows {
-		_, err := reader.Read()
-		if err != nil {
+		if _, err := reader.Read(); err != nil {
 			return nil, err
 		}
 	}
