@@ -186,12 +186,8 @@ func (d *Device) GetFilteredRecords() ([]any, error) {
 			return nil, fmt.Errorf("error at row index %d with error: %s", i, err.Error())
 		}
 
-		if len(rec) < len(d.CsvOptions.Columns) {
-			return nil, fmt.Errorf("error at row index %d: row in csv has less columns than total columns specified by the device %q configuration", i, d.Name)
-		}
-
 		for _, colOpts := range d.CsvOptions.Columns {
-			if len(rec) < colOpts.ColumnIndex {
+			if len(rec) <= colOpts.ColumnIndex {
 				return nil, fmt.Errorf("error at row index %d:cannot get column value with name %q from row by indexing; row length is smaller than column index (%d)", i, colOpts.Name, colOpts.ColumnIndex)
 			}
 
