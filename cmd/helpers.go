@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/EraldBa/csv-data-collector/models"
+	"github.com/EraldBa/csv-data-collector/validators"
 	"github.com/go-sql-driver/mysql"
 )
 
@@ -49,13 +50,11 @@ func getConfig(configPath string) (*models.Config, error) {
 
 	config := &models.Config{}
 
-	err = json.Unmarshal(file, config)
-	if err != nil {
+	if err = json.Unmarshal(file, config); err != nil {
 		return nil, err
 	}
 
-	err = config.RunChecks()
-	if err != nil {
+	if err = validators.Config(config); err != nil {
 		return nil, err
 	}
 

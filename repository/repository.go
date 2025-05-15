@@ -14,19 +14,19 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// dbConf holds the app configuration
+// dbConfig holds the app configuration
 // and database connection
-type dbConf struct {
+type dbConfig struct {
 	AppConf *models.Config
 	DB      *sql.DB
 }
 
 const ctxTimeOut = 30 * time.Second
 
-// New returns a new instance of dbConf with the
+// New returns a new instance of dbConfig with the
 // provided db connection and app config
-func New(conn *sql.DB, config *models.Config) *dbConf {
-	return &dbConf{
+func New(conn *sql.DB, config *models.Config) *dbConfig {
+	return &dbConfig{
 		AppConf: config,
 		DB:      conn,
 	}
@@ -34,7 +34,7 @@ func New(conn *sql.DB, config *models.Config) *dbConf {
 
 // SaveDevices saves data from all devices in the app config
 // concurrently. It logs save info or the error for each device.
-func (d *dbConf) SaveDevices() {
+func (d *dbConfig) SaveDevices() {
 	wg := &sync.WaitGroup{}
 
 	wg.Add(len(d.AppConf.Devices))
@@ -58,7 +58,7 @@ func (d *dbConf) SaveDevices() {
 
 // SaveCSVDataFor saves the csv data for the provided device to the
 // appropriate table in the db
-func (d *dbConf) SaveCSVDataFor(device *models.Device) error {
+func (d *dbConfig) SaveCSVDataFor(device *models.Device) error {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeOut)
 	defer cancel()
 
@@ -72,7 +72,7 @@ func (d *dbConf) SaveCSVDataFor(device *models.Device) error {
 
 	records, err := device.GetFilteredRecords()
 	if err != nil {
-		return fmt.Errorf("could not get csv records from device %q with error: %s", device.Name, err.Error())
+		return fmt.Errorf("could not get csv records from device %q with error: %w", device.Name, err)
 	}
 
 	rowCount := len(records) / len(device.CsvOptions.Columns)
@@ -85,7 +85,7 @@ func (d *dbConf) SaveCSVDataFor(device *models.Device) error {
 }
 
 // createTableFor creates a table in the db for specified device
-func (d *dbConf) createTableFor(device *models.Device) error {
+func (d *dbConfig) createTableFor(device *models.Device) error {
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeOut)
 	defer cancel()
 
@@ -183,8 +183,6 @@ func generateCSVInsertQuery(device *models.Device, rowCount int) string {
 	// since rows can be quite numerous
 	vals = strings.Repeat(","+vals, rowCount)
 
-	// Inserting the rest of the value placeholders to the query
-	queryBuilder.Grow(len(vals))
 	queryBuilder.WriteString(vals)
 
 	return queryBuilder.String()
